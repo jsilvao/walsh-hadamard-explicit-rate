@@ -16,8 +16,8 @@ identifiers:
     value: "10.5281/zenodo.24575295"
     description: "Paper and Lean development, all versions (Zenodo)"
   - type: doi
-    value: "10.5281/zenodo.24575299"
-    description: "The paper (preprint PDF, Zenodo)"
+    value: "10.5281/zenodo.24575298"
+    description: "The paper (preprint PDF, Zenodo), all versions"
 repository-code: "https://github.com/jsilvao/walsh-hadamard-explicit-rate"
 abstract: >-
   Paper and Lean 4 development. Over every field of characteristic zero,
