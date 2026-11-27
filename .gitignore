@@ -22,3 +22,6 @@ references/
 notes/
 paper/draft.md
 scripts/
+
+# Research in progress (Lemma S for the sharper rate); not part of the paper yet
+lean/FTPaper/LemmaS/
