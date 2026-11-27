@@ -17,7 +17,7 @@ The first version of the paper (v1.x) proved the weaker `N (log N)^{1/2 + O(√(
 
 - **Paper:** [`paper/latex/main.pdf`](paper/latex/main.pdf), source in `paper/latex/`. Paper DOI: [10.5281/zenodo.24575298](https://doi.org/10.5281/zenodo.24575298) (always the latest version).
 - **Lean development:** [`lean/`](lean/), pinned to Lean v4.34.1 and Mathlib `d13f23b7`, the same pins as openai/math.
-- **Archived on Zenodo:** [10.5281/zenodo.24575295](https://doi.org/10.5281/zenodo.24575295) (all versions; v1.0.1 is [10.5281/zenodo.24575296](https://doi.org/10.5281/zenodo.24575296)).
+- **Archived on Zenodo:** [10.5281/zenodo.24575295](https://doi.org/10.5281/zenodo.24575295) (all versions; v2.0.0 is [10.5281/zenodo.24600561](https://doi.org/10.5281/zenodo.24600561), v1.0.1 is [10.5281/zenodo.24575296](https://doi.org/10.5281/zenodo.24575296)).
 
 ## Checking the proofs
 
