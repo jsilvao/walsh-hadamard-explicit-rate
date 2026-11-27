@@ -123,7 +123,7 @@ We also prove limits of the method.
 \end{theorem}
 \formal{(1) \lean{template_floor} (\lean{FTPaper/Floor.lean}); (2) \lean{batching_sufficient}, \lean{batching_necessary} (\lean{FTPaper/Batching.lean}); (3) \lean{charged_card_ge_pairing}, from the general \lean{charged_card_ge_pow} (\lean{FTPaper/Limits.lean}).}
 
-The hypothesis of~(1) is OpenAI's lower bound in~\eqref{eq:oai}. OpenAI prove it in Lean, but we have not imported that proof, so~(1) is stated conditionally. The factor $\sqrt2$ in $\sqrt{A/2}$ comes from our compilation of plans into circuits (Section~\ref{sec:circuits}). In OpenAI's routing, $\langle d_\lambda,d_\lambda\rangle=1$, the free rectangles are those on which the pairing vanishes, and the charged rectangles are paid separately for every query~\cite[\S5.2]{oai2026}. So (3) bounds the number of charged rectangles of every routing of this type from below.
+The hypothesis of~(1) is OpenAI's lower bound in~\eqref{eq:oai}. OpenAI prove it in Lean, but that proof depends on about 7{,}200 further modules of their library, so we state~(1) with the lower bound as a hypothesis instead of importing it. The factor $\sqrt2$ in $\sqrt{A/2}$ comes from our compilation of plans into circuits (Section~\ref{sec:circuits}). In OpenAI's routing, $\langle d_\lambda,d_\lambda\rangle=1$, the free rectangles are those on which the pairing vanishes, and the charged rectangles are paid separately for every query~\cite[\S5.2]{oai2026}. So (3) bounds the number of charged rectangles of every routing of this type from below.
 
 \subsection{Formalization}
 

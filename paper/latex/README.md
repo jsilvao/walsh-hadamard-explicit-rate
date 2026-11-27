@@ -36,7 +36,7 @@ This needs `acmart`, `fancyvrb` and `array`, which are in TeX Live and MiKTeX.
    - The mathlib Community, CPP 2020, pp. 367–381.
 3. **The "Use of AI tools" section** must be accurate when you submit. arXiv requires significant use of generative AI to be reported, and AI tools cannot be authors.
 4. **arXiv categories.** Primary `cs.CC` (Computational Complexity). `cs.LO` (Logic in Computer Science) is a reasonable cross-list for the formalization. A first-time submitter needs a personal endorsement from an established author in `cs`.
-5. **The repository must be public** before the link in the paper works: https://github.com/jsilvao/walsh-hadamard-explicit-rate.
+5. **The repository** is public: https://github.com/jsilvao/walsh-hadamard-explicit-rate.
 
 ## Numbering: working labels → this paper
 
