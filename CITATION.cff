@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "An Explicit Rate for the Logarithmic Exponent of the Walsh–Hadamard Transform"
+authors:
+  - family-names: "Silva Ortiz"
+    given-names: "Javier"
+license: Apache-2.0
+keywords:
+  - Walsh–Hadamard transform
+  - linear circuits
+  - fast Fourier transform
+  - Lean
+  - formal verification

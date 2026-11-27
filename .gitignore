@@ -1,0 +1,24 @@
+# Lean build output and the downloaded Mathlib cache
+lean/.lake/
+
+# LaTeX build output (make-arxiv.sh regenerates main.bbl)
+paper/latex/*.aux
+paper/latex/*.bbl
+paper/latex/*.blg
+paper/latex/*.fdb_latexmk
+paper/latex/*.fls
+paper/latex/*.log
+paper/latex/*.out
+paper/latex/*.synctex.gz
+paper/latex/main.txt
+paper/latex/*.cut
+paper/latex/arxiv/
+paper/latex/arxiv-upload.tar.gz
+
+# Third-party PDF kept for reference only; do not redistribute
+references/
+
+# Working notes and development scripts (material without Lean proofs); kept local
+notes/
+paper/draft.md
+scripts/

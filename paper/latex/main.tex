@@ -1,0 +1,535 @@
+\documentclass[acmsmall,nonacm,screen]{acmart}
+
+\usepackage{fancyvrb}
+\usepackage{array}
+
+\settopmatter{printacmref=false}
+
+
+% Lean identifiers (ASCII only).
+\newcommand{\lean}[1]{\textup{\texttt{\detokenize{#1}}}}
+% The Lean names that formalize the preceding statement.
+\newcommand{\formal}[1]{\par\addvspace{3pt}{\raggedright\noindent\small\textsf{Lean:}\ #1\par}\addvspace{5pt}}
+\newcommand{\xeps}{\texttt{x}\(\varepsilon\)}
+\newcommand{\cost}{\mathrm{C}}
+\newcommand{\F}{\mathbb{F}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\free}{\operatorname{free}}
+\newcommand{\Drec}{D_{\mathrm{rec}}}
+\newcommand{\repourl}{\url{https://github.com/jsilvao/walsh-hadamard-explicit-rate}}
+\setlength{\emergencystretch}{2em}
+
+\begin{document}
+
+\title{An Explicit Rate for the Logarithmic Exponent of the Walsh--Hadamard Transform}
+
+\author{Javier Silva Ortiz}
+\affiliation{%
+  \institution{Independent researcher}
+  \country{Germany}}
+
+\begin{abstract}
+OpenAI recently proved that the Walsh--Hadamard transform $H^{\otimes k}$ on $N=2^k$ points needs between $cN\sqrt{\log N}$ and $C_\varepsilon N(\log N)^{1/2+\varepsilon}$ binary linear gates, for every $\varepsilon>0$. The $o(1)$ in the exponent $1/2+o(1)$ was not quantified. Over every field of characteristic zero we prove
+\[
+  \cost(H^{\otimes k})\ \le\ 2^k(1+k)^{1/2+200\sqrt{\log_2\ell/\ell}}
+  \qquad\text{whenever}\qquad \ell=\bigl\lfloor\log_2\lfloor\log_2(1+k)\rfloor\bigr\rfloor\ge 48,
+\]
+that is, $\cost(H^{\otimes k})\le N(\log N)^{1/2+O(\sqrt{\log^{(4)}N/\log^{(3)}N})}$. The main step sharpens one level of OpenAI's recursive template. Horner evaluation of the predictor, a two-pass repair that divides instead of iterating, and repair conversions fed back into the template reduce the number of pencil stages per level from at least $11.3\sqrt{m\log_2 2m}$ to $\frac{20}{3}\sqrt m+O(1)$, where $m$ is the number of queries. We then bound every constant in OpenAI's batch recursion explicitly. We also prove limits of the method: for instance, if OpenAI's lower bound holds, every correct template on $A$ axes makes at least $\sqrt{A/2}$ calls per row. All of these results are formalized in Lean~4, on top of OpenAI's own Lean development, using only the standard axioms.
+\end{abstract}
+
+\keywords{Walsh--Hadamard transform, fast Fourier transform, linear circuits, algebraic complexity, formal verification, Lean}
+
+\maketitle
+
+% ---------------------------------------------------------------------------
+\section{Introduction}\label{sec:intro}
+
+\subsection{Background}
+
+Let $K$ be a field. Following OpenAI~\cite{oai2026}, we write $\cost_K(M)$ for the least number of gates in a linear circuit over $K$ that computes $x\mapsto Mx$. Each gate forms $au+bv$ from two available values (inputs or earlier gates), with arbitrary $a,b\in K$. An output either selects and scales one available value or is zero. The coefficients are unrestricted.
+
+Let $H=\left(\begin{smallmatrix}1&1\\1&-1\end{smallmatrix}\right)$ and $N=2^k$. Applying $H$ along each of the $k$ coordinates gives $\cost_K(H^{\otimes k})\le k2^k=N\log_2N$. Several finer results are known:
+\begin{itemize}
+\item For circuits whose coefficients have absolute value at most $1$, Morgenstern's determinant argument~\cite{Mor73} gives a lower bound of $\frac12N\log_2N$.
+\item Alman and Rao~\cite{AR23} computed $H^{\otimes k}$ with $\frac{23}{24}N\log_2N+O(N)$ field operations.
+\end{itemize}
+
+In November 2026 OpenAI released a manuscript~\cite{oai2026}, with a Lean formalization~\cite{oaimath}, showing that the logarithmic exponent of finite Fourier transforms is $1/2$. For the Walsh--Hadamard transform, their Theorem~1.1 gives, over fields in which $2$ is invertible,
+\begin{equation}\label{eq:oai}
+  c\,N\sqrt{\log N}\ \le\ \cost_K(H^{\otimes k})\ \le\ C_\varepsilon\,N(1+\log N)^{1/2+\varepsilon}\qquad(\varepsilon>0),
+\end{equation}
+where $c>0$ is absolute and the constants $C_\varepsilon$ are not made explicit. The upper bound comes from a recursive template. For each $\varepsilon$, its parameters are only chosen ``large enough''. So the $o(1)$ in the exponent $1/2+o(1)$ is not quantified, and the case $\varepsilon=0$ is left open~\cite[p.~2]{oai2026}. Separately, a RAM algorithm for the exact discrete Fourier transform of every length was accepted on the Big O Speedrun leaderboard~\cite{bos223}. Its exponent is $1/2+1/(2(10^{40}-1))$.
+
+OpenAI's manuscripts were produced by an AI model, and OpenAI describe them as raw research data rather than polished papers~\cite{oaimath}. The results below rely only on OpenAI's Lean development, which our build compiles and checks again.
+
+\subsection{Results}
+
+Our main theorem makes the $o(1)$ explicit in characteristic zero.
+
+\begin{theorem}[Explicit rate]\label{thm:rate}
+Let $K$ be a field of characteristic $0$ and $k\ge0$.
+\begin{enumerate}
+\item[(a)] For every integer $x\ge12$ with $\log_2(1+k)\ge 2^{4x}$,
+\[
+  \cost_K(H^{\otimes k})\ \le\ 2^k(1+k)^{1/2+3\varepsilon(x)},\qquad
+  \varepsilon(x)=\frac{11\sqrt{x\log_2x}+11}{x+1}.
+\]
+\item[(b)] If $\ell:=\lfloor\log_2\lfloor\log_2(1+k)\rfloor\rfloor\ge48$, then
+$\cost_K(H^{\otimes k})\le 2^k(1+k)^{1/2+200\sqrt{\log_2\ell/\ell}}$.
+\end{enumerate}
+In terms of $N=2^k$: $\cost_K(H^{\otimes k})\le N(\log N)^{1/2+O(\sqrt{\log^{(4)}N/\log^{(3)}N})}$.
+\end{theorem}
+\formal{\lean{walsh_explicit_rate} (a), \lean{walsh_explicit_rate_k}, \lean{walsh_rate_asymptotic} (b); file \lean{FTPaper/ExplicitRate.lean}. The statements are quoted in Appendix~\ref{app:statements}.}
+
+The bound is of theoretical interest only. It applies only when $\log_2(1+k)\ge2^{48}$, and its exponent beats the trivial exponent $1$ only once $\varepsilon(x)<1/6$. What is new is that the rate is explicit and that every step is machine-checked. The same pipeline also gives OpenAI's upper bound in~\eqref{eq:oai} for characteristic~$0$, through our template:
+
+\begin{corollary}[Every $\varepsilon$]\label{cor:every}
+For every $\varepsilon>0$ there is $D_\varepsilon$ such that $\cost_K(H^{\otimes k})\le D_\varepsilon\,2^k(1+k)^{1/2+\varepsilon}$ for every field $K$ of characteristic $0$ and every $k\ge0$.
+\end{corollary}
+\formal{\lean{walsh_upper} (\lean{FTPaper/QUpper.lean}).}
+
+The main new ingredient is a sharper single level of OpenAI's template. Section~\ref{sec:prelim} recalls the terms. A \emph{plan} computes $W$ independent copies of the (normalized) transform on $A$ axes. It is allowed to call the transform on a single axis, and $\sigma$ denotes its number of such calls. If $\sigma/W<A^\theta$, the recursion gives $\cost(H^{\otimes k})=O(2^k(1+k)^\theta)$, whereas the direct algorithm needs $\sigma/W=A$.
+
+\begin{theorem}[One level]\label{thm:onelevel}
+Let $m$ be odd. Fix one of OpenAI's binary routing systems with label length $L$, alphabet $\{0,1\}^b$ with $b\ge1$, and dimension $D$, such that $m\le 2^{b\lfloor L/2\rfloor}$. Let $A=2(m+D-1)$, and let $d$ satisfy $A\le10^d$. Then there is a correct plan with rational coefficients on $W=2^{m+bL}\,20^d$ rows over $A$ axes whose number $\sigma$ of calls satisfies
+\[
+  \frac{\sigma}{W}\ \le\ \Bigl(\frac{20}{3}\sqrt m+\frac{40}{9}\Bigr)\rho+1,\qquad \rho=6D(1+b)^L .
+\]
+Let $x\ge2$ be an integer with $m\le2^x$, and choose $L,b$ as in Corollary~\ref{cor:R2} with $2(m+1+L2^b)\le10^d$. Then $\rho$ may be replaced by $2^{11\sqrt{x\log_2x}+7}$.
+\end{theorem}
+\formal{\lean{theorem1}, \lean{theorem1_explicit} (\lean{FTPaper/QFeedback.lean}); \lean{theorem1_routed} (\lean{FTPaper/QRouted.lean}).}
+
+For comparison, OpenAI's template applies its predictor $\ell+2=4$ times~\cite[Lemma~4.4]{oai2026}. Each application takes $b'$ pencil stages, where $b'$ (their \lean{clockPeriod}) is the least power of two that is at least $\max(2,v-u)$ for their window $[u,v]$~\cite[\S4.1--4.2]{oai2026}.
+
+\begin{proposition}[OpenAI's stage count]\label{prop:oaistages}
+For every $m\ge1$, $4b'\ge 8\bigl\lceil\sqrt{2m\lceil\log_2 2m\rceil}\,\bigr\rceil\ge 11.3\sqrt{m\log_2 2m}$.
+\end{proposition}
+\formal{\lean{two_radius_le_degree}, \lean{oai_stages_ge}, \lean{oai_stages_ge_real} (\lean{FTPaper/Compare.lean}). OpenAI's calls are bounded by $4b'$ stage costs plus the repair in \lean{oai_template_cost} (\lean{FTPaper/RoutingOAI.lean}).}
+
+So Theorem~\ref{thm:onelevel} removes a factor of order $\sqrt{\log m}$ from the cost of a level. Since $A\ge2m$, the floor of Theorem~\ref{thm:limits}(1) is at least $\sqrt m$ calls per row, and Theorem~\ref{thm:onelevel} is within the factor $(\frac{20}{3}+o(1))\rho$ of it.
+
+We also prove limits of the method.
+
+\begin{theorem}[Limits of the template method]\label{thm:limits}
+\leavevmode
+\begin{enumerate}
+\item \emph{(Floor, conditional.)} Let $K$ be a field of characteristic $0$. Suppose there is $c>0$ with $\cost_K(H^{\otimes k})\ge c\,2^k\sqrt k$ for all $k\ge1$. Then every correct plan on $W\ge1$ rows over $A\ge1$ axes makes at least $W\sqrt{A/2}$ calls.
+\item \emph{(Batching.)} Let $K$ be a commutative ring. Then $\cost_K(H^{\otimes k})=O(2^k\sqrt k)$ if and only if there are $\gamma>0$ and $C\ge0$ such that, for every $a\ge1$, some number $W\le2^{\gamma a}$ of independent copies of $H^{\otimes a}$ can be computed together with at most $C\,W2^a\sqrt a$ gates.
+\item \emph{(Charged rectangles.)} Let $V$ be a finite set, $d\colon V\to\F_2^D$, and $\langle\cdot,\cdot\rangle$ any pairing on $\F_2^D$ with $\langle d_\lambda,d_\lambda\rangle\ne0$ for all $\lambda\in V$. Suppose the identity matrix on $V$ is a weighted sum of rectangles $I\times J$ ($I,J\subseteq V$) from two families $\mathcal C$ and $\mathcal F$, where the pairing vanishes on every rectangle of $\mathcal F$: $\langle d_\lambda,d_\mu\rangle=0$ for all $\lambda\in I$, $\mu\in J$. Then $|\mathcal C|\ge|V|/2^D$.
+\end{enumerate}
+\end{theorem}
+\formal{(1) \lean{template_floor} (\lean{FTPaper/Floor.lean}); (2) \lean{batching_sufficient}, \lean{batching_necessary} (\lean{FTPaper/Batching.lean}); (3) \lean{charged_card_ge_pairing}, from the general \lean{charged_card_ge_pow} (\lean{FTPaper/Limits.lean}).}
+
+The hypothesis of~(1) is OpenAI's lower bound in~\eqref{eq:oai}. OpenAI prove it in Lean, but we have not imported that proof, so~(1) is stated conditionally. The factor $\sqrt2$ in $\sqrt{A/2}$ comes from our compilation of plans into circuits (Section~\ref{sec:circuits}). In OpenAI's routing, $\langle d_\lambda,d_\lambda\rangle=1$, the free rectangles are those on which the pairing vanishes, and the charged rectangles are paid separately for every query~\cite[\S5.2]{oai2026}. So (3) bounds the number of charged rectangles of every routing of this type from below.
+
+\subsection{Formalization}
+
+Every result above is proved in Lean~4~\cite{Lean4} with Mathlib~\cite{mathlib}, on top of OpenAI's Lean development~\cite{oaimath}. We include 156 of its modules unchanged. The main statements are about OpenAI's definitions \lean{complexity} (the $\cost_K$ above) and \lean{primeTransform} (which gives $H^{\otimes k}$ at $\zeta=-1$). To trust them, a reader therefore needs to check only those definitions, which Appendix~\ref{app:statements} quotes, and that the development builds with the standard axioms. Section~\ref{sec:lean} describes the library. The code is available at \repourl.
+
+\subsection{Scope}
+
+Our results hold over fields of characteristic~$0$, because the predictor interpolates with denominators $h!$ (Section~\ref{sec:predictor}). Whether $\varepsilon=0$ is attainable, that is, whether $\cost_K(H^{\otimes k})=O(N\sqrt{\log N})$, remains open~\cite[p.~2]{oai2026}.
+
+\subsection{Organization and conventions}
+
+\begin{itemize}
+\item Section~\ref{sec:prelim} recalls OpenAI's model and template.
+\item Sections~\ref{sec:predictor}--\ref{sec:routing} prove Theorem~\ref{thm:onelevel}.
+\item Section~\ref{sec:circuits} proves Theorem~\ref{thm:rate} and Corollary~\ref{cor:every}.
+\item Section~\ref{sec:limits} proves Theorem~\ref{thm:limits}.
+\end{itemize}
+
+Every theorem, proposition, lemma and corollary in this paper is formalized, and the Lean names follow its statement. Statements about OpenAI's construction are cited from their manuscript. Logarithms are to base~$2$ unless written $\ln$.
+
+% ---------------------------------------------------------------------------
+\section{Preliminaries}\label{sec:prelim}
+
+\subsection{Batches and the recursion}
+
+Group the $Af$ digits of an address into $A$ axes of $f$ digits each. A \emph{call} applies $H^{\otimes f}$ along one axis of one array of $2^{Af}$ entries, at every choice of the other digits. Such a call costs $2^{(A-1)f}\cost_K(H^{\otimes f})$ gates. OpenAI's recursion~\cite[\S5.4]{oai2026} starts from a \emph{batch inequality}. For every $f\ge1$, $W$ independent copies of $H^{\otimes Af}$ must be computable with at most
+\begin{equation}\label{eq:batch}
+  \Omega\cdot2^{Af}\;+\;\sigma\cdot2^{(A-1)f}\,\cost_K(H^{\otimes f})
+\end{equation}
+gates (Lean: OpenAI's \lean{PrimeKernelBatch}). Here $\Omega$ counts gates outside calls per address, and $\sigma$ counts calls. OpenAI's proof that a strict saving $\sigma/W<A^\theta$ gives $\cost_K(H^{\otimes k})=O(2^k(1+k)^\theta)$ goes through a private lemma with an explicit constant. We make that lemma public:
+
+\begin{lemma}[Recursion with explicit constant]\label{lem:recursion}
+Let $K$ be a commutative ring and $A,W\ge1$, $\sigma,\Omega,r\in\mathbb N$ with $r\ge A$, and $\theta\ge0$. Suppose $\beta:=(\sigma/W)(1+W/2^r)<A^\theta$ and that~\eqref{eq:batch} holds for every $f\ge1$. Then for every $k\ge0$,
+\[
+  \cost_K(H^{\otimes k})\ \le\ \Drec\,2^k(1+k)^\theta,\qquad
+  \Drec=\max\Bigl(1+2^{r+A},\ \frac{2\Omega+2^{r+A}}{A^\theta-\beta}\Bigr).
+\]
+\end{lemma}
+\formal{\lean{primeTransform_bound_paddedX}, \lean{paddedKernelConstantX} (\lean{FTPaper/ExplicitRecursion.lean}). These copy OpenAI's private \lean{primeTransform_bound_padded} with the constant exposed. The Lean statement holds over every commutative semiring and every $\zeta$.}
+
+\begin{proof}[Proof idea]
+For a $k$-digit array, take $f=\lfloor(k-r)/A\rfloor$ when this is positive. The $k-Af$ remaining digits supply independent rows for the template. Incomplete batches are padded, at a cost of a factor at most $1+W/2^r$. The fewer than $r+A$ leftover digit transforms are done directly. Dividing by $2^k$, this gives $T(k)\le 2\Omega+2^{r+A}+\beta\,T(f)$ with $T(k)=\cost_K(H^{\otimes k})/2^k$, and induction on $k$ gives the bound.
+\end{proof}
+
+\subsection{Plans}
+
+OpenAI's template is written in a small plan language (\lean{KernelPass.Plan}). A plan with $i$ input rows and $o$ output rows acts on arrays (\emph{rows}) whose addresses have $A$ axes. At \emph{child width} $h$, each axis carries $2h$ bits. The instructions are:
+\begin{itemize}
+\item a row mix with dyadic coefficients, applied identically at every address (\lean{mix});
+\item an address permutation that adds one axis to another column by column (\lean{xor});
+\item an address-dependent dyadic scaling of one row (\lean{scale});
+\item a \emph{child call}, which applies the normalized transform $2^{-h}H^{\otimes2h}$ along one axis of one row (\lean{child});
+\item serial and parallel composition.
+\end{itemize}
+The number of child calls of $p$ is $\sigma(p)$. A plan on $W$ rows is \emph{correct} if, for every $h$, it computes $2^{-Ah}H^{\otimes2Ah}$ on each of its $W$ rows (\lean{KernelPass.Correct}).
+
+Our predictor needs rational coefficients (Section~\ref{sec:rational}). So we work in \lean{QPlan}, the same language with three changes:
+\begin{itemize}
+\item rational row mixes;
+\item address-dependent rational row scalings;
+\item an instruction \lean{embed}, which runs any of OpenAI's plans unchanged, with the same matrix and the same number of calls.
+\end{itemize}
+Correctness and calls are defined as before (\lean{FTPaper/QPlan.lean}).
+
+\subsection{OpenAI's binary template}\label{sec:template}
+
+We recall the case $\ell=2$ of~\cite[\S5]{oai2026}.
+
+\paragraph{Queries.} Fix an odd number $m$ of queries and a routing dimension $D\ge1$. Put $d=m+D-1$ and $A=2d$. Each half of an address has $m$ distinguished axes, one per query, and $D-1$ auxiliary axes. In frequency coordinates, column $c$ of the address carries a pair $(X_c,Z_c)\in\F_2^d\times\F_2^d$. At the frequency $\nu=(X,Z)$, the $j$-th query $Q_j$ is the diagonal operator with multiplier $(-1)^{k_j(\nu)}$, where
+\[
+  k_j(\nu)=\sum_c\Bigl(X_{c,j}Z_{c,j}+\sum_{i>m}X_{c,i}Z_{c,i}\Bigr)\bmod 2 .
+\]
+Write $k(\nu)=(k_1(\nu),\dots,k_m(\nu))\in\F_2^m$. Since $m$ is odd, the product $F=\prod_jQ_j$ has multiplier $(-1)^{|k(\nu)|}=(-1)^{\sum_cX_c\cdot Z_c}$. Moreover, $F$ equals the normalized transform up to monomial maps~\cite[\S5.1]{oai2026}.
+
+\paragraph{Batches and pencil stages.} A batch has $W$ rows. Row $i$ carries a shift $\beta(i)\in\F_2^m$, and every shift occurs equally often. A \emph{pencil stage} applies $A_0\otimes I+\sum_jA_j\otimes Q_j$, where $A_0,\dots,A_m$ are $W\times W$ matrices acting across rows. The template first predicts $F$ with pencil stages. It then repairs the prediction on the rows where it fails (Sections~\ref{sec:predictor}--\ref{sec:feedback}).
+
+\paragraph{Routing.} To implement a pencil stage, OpenAI run it in parallel at each label of $V=\{0,\dots,q-1\}^L$, $q=2^b$, and route data through weighted rectangles of labels~\cite[\S5.2--5.3]{oai2026}. The routing uses two ingredients:
+\begin{itemize}
+\item vectors $d_\lambda\in\F_2^D$ ($\lambda\in V$) with $\langle d_\lambda,d_\mu\rangle=1-\Delta(\lambda,\mu)\bmod2$, where $\Delta$ is the Hamming distance;
+\item a decomposition of the identity on $V$ into weighted rectangles $I\times J$.
+\end{itemize}
+On a \emph{free} rectangle, $\langle d_\lambda,d_\mu\rangle=0$ throughout $I\times J$. This lets all queries share the Fourier work at the endpoints. The remaining \emph{charged} rectangles are paid separately for each query. We write $\rho$ for an upper bound on the calls per row of one stage (Section~\ref{sec:routing}).
+
+% ---------------------------------------------------------------------------
+\section{The predictor}\label{sec:predictor}
+
+For $\beta\in\F_2^m$ put $\cN_\beta=\sum_j\frac12\bigl(I-(-1)^{\beta_j}Q_j\bigr)$, and let $|\cdot|$ denote Hamming weight.
+
+\begin{lemma}[Predictor]\label{lem:predictor}
+Let $K$ have characteristic $0$. Let $u\le v$ be integers, and put $e=v-u$.
+\begin{enumerate}
+\item $\cN_\beta$ multiplies the frequency $\nu$ by the \emph{shifted count} $c_\beta(\nu)=|k(\nu)\oplus\beta|$.
+\item There is $\pi_\beta\in K[t]$ with $\deg\pi_\beta\le e$ such that $\pi_\beta(c_\beta(\nu))=(-1)^{|k(\nu)|}$ whenever $u\le c_\beta(\nu)\le v$. At every such frequency, $\pi_\beta(\cN_\beta)$ agrees with $F$.
+\item Horner's rule computes $\pi_\beta(\cN_\beta)X$ with $e$ pencil stages and one stored row.
+\item $\{\beta:c_\beta(\nu)\notin[u,v]\}=k(\nu)\oplus E$, where $E=\{\gamma\in\F_2^m:|\gamma|\notin[u,v]\}$. In particular, the number of such shifts does not depend on $\nu$.
+\end{enumerate}
+\end{lemma}
+\formal{(1)--(2) \lean{count_eq}, \lean{parity}, \lean{exists_window_poly}, \lean{predictor_correct}, for any linear equivalence that diagonalizes the queries; (3) \lean{horner_eq}, \lean{horner_stages}; (4) \lean{card_window_complement} (\lean{FTPaper/Predictor.lean}). In the plan language: \lean{applyAt_horner}, \lean{calls_horner}, \lean{frequency_horner}.}
+
+\begin{proof}
+(1) The $j$-th term multiplies $\nu$ by $\frac12(1-(-1)^{\beta_j+k_j(\nu)})=[k_j(\nu)\ne\beta_j]$. Summing over $j$ gives $c_\beta(\nu)$.
+
+(2) The points $u,\dots,v$ are distinct in characteristic~$0$. So we can interpolate $c\mapsto(-1)^{c+|\beta|}$ on them by a polynomial with rational coefficients. Since $|k\oplus\beta|\equiv|k|+|\beta|\pmod2$, its value at $c_\beta(\nu)$ is $(-1)^{|k(\nu)|}$, the multiplier of $F$.
+
+(3) Write $\pi_\beta=\sum_{h\le e}\pi_ht^h$. Set $Y\leftarrow\pi_eX$, then for $h=e-1,\dots,0$ set $Y\leftarrow\cN_\beta Y+\pi_hX$. Each step is one pencil stage with diagonal coefficients.
+
+(4) The map $\beta\mapsto k(\nu)\oplus\beta$ is a bijection.
+\end{proof}
+
+To cover every characteristic, OpenAI interpolate with integral coefficients~\cite[Lemma~4.2]{oai2026} and evaluate the predictor as a power of a matrix of affine forms~\cite[Lemma~4.3]{oai2026}. This multiplies the batch by $b'^{h}$ for a polynomial with $h$ monomials and rounds the degree up to a power of two. In characteristic~$0$, Horner's rule needs neither.
+
+% ---------------------------------------------------------------------------
+\section{Two-pass repair over a field}\label{sec:repair}
+
+\paragraph{Setting.} Let $K$ be a field, and let $\mathcal S$ be an invertible linear map on one row (a \emph{conversion}). Suppose that $\mathcal SP_i\mathcal S^{-1}=\operatorname{diag}(p_i)$ for the predictors $P_i$ (one per row $i$) and that $\mathcal SF\mathcal S^{-1}=\operatorname{diag}(z)$. Put $J(\nu)=\{i:p_i(\nu)\ne z(\nu)\}$, and assume $|J(\nu)|\le s$ for all $\nu$. Let $\mathsf H\in K^{s\times W}$ have every $s$ columns linearly independent, for example a Vandermonde matrix with distinct nodes. Hats denote converted rows.
+
+\paragraph{Procedure} on a batch $X=(X_1,\dots,X_W)$:
+\begin{enumerate}
+\item $Y_i=P_iX_i$ for every row $i$.
+\item Form the $2s$ check rows $U=\sum_i\mathsf H_{\cdot,i}Y_i$ and $U'=\sum_i\mathsf H_{\cdot,i}X_i$.
+\item Convert both by $\mathcal S$.
+\item At each frequency $\nu$:
+  \begin{itemize}
+  \item recover $e_{J}$ from $\hat U-z\hat U'=\mathsf He$, where $e_i=(p_i-z)\hat X_i$ is supported on $J=J(\nu)$;
+  \item put $x_i=e_i/(p_i-z)$ for $i\in J$;
+  \item choose $a\in K^s$ with $(\mathsf H^{\top}a)_J=x_J$;
+  \item output $a$ and $za$.
+  \end{itemize}
+\item Convert both back by $\mathcal S^{-1}$ and lift: $Z_i=\sum_r\mathsf H_{r,i}\,\mathcal S^{-1}(a)_r$ and $G_i=\sum_r\mathsf H_{r,i}\,\mathcal S^{-1}(za)_r$.
+\item $Y_i'=P_iZ_i$.
+\item Output $Y_i-Y_i'+G_i$.
+\end{enumerate}
+
+\begin{lemma}[Two-pass repair]\label{lem:repair}
+The output equals $FX_i$ for every row $i$. The procedure uses two applications of the predictors and $4s$ conversions ($2s$ in each direction). Everything else is a linear map that acts at a single frequency or across rows at a single address.
+\end{lemma}
+\formal{\lean{repair_correct}, \lean{exists_table}, \lean{separatesOn_vandermonde}, \lean{exists_table_vandermonde} (\lean{FTPaper/Repair.lean}, any field); in the plan language \lean{applyAt_twoPass} (\lean{FTPaper/QTwoPass.lean}).}
+
+\begin{proof}
+Fix a frequency $\nu$. Since $\hat G_i=z\hat Z_i$ and $\hat Y_i'=p_i\hat Z_i$, the output at row $i$ is
+\[
+  p_i\hat X_i-p_i\hat Z_i+z\hat Z_i=p_i\hat X_i-(p_i-z)\hat Z_i .
+\]
+For $i\notin J$ we have $p_i=z$, so the output is $z\hat X_i$. For $i\in J$, step~4 gives $\hat Z_i=(\mathsf H^\top a)_i=x_i=\hat X_i$, so again the output is $z\hat X_i$. Step~4 is possible because $\mathsf H_J$ has full column rank.
+\end{proof}
+
+OpenAI's repair~\cite[Lemma~4.4]{oai2026} works over rings, where $p_i-z$ need not be invertible. It therefore replaces $P$ by $g(P)$ with $g(y)=y-\ell^{-1}y(y^\ell-1)$ and uses $\ell+2=4$ predictor applications. Over a field we can divide by $p_i-z$, and two applications suffice.
+
+% ---------------------------------------------------------------------------
+\section{Feedback conversions}\label{sec:feedback}
+
+The repair converts only $4s$ rows. In our setting a conversion is itself the transform $F$ up to monomial maps. So the converted rows of many batches can be collected and processed by the template again.
+
+\begin{lemma}[Feedback]\label{lem:feedback}
+Suppose the following hold:
+\begin{itemize}
+\item a procedure computes $F$ on a batch of $W$ rows with $w$ calls outside conversions, plus two rounds of $2s$ conversions;
+\item $\mathcal S$ and $\mathcal S^{-1}$ equal $F$ up to monomial maps;
+\item $\delta=s/W<1/4$ and $G=W/(2s)\in\mathbb Z$.
+\end{itemize}
+Then for every $g\ge0$, $F$ can be computed on $G^g$ batches with at most
+\[
+  \frac{w/W}{1-4\delta}+(4\delta)^{g+1}A
+\]
+calls per row.
+\end{lemma}
+\formal{cost recursion and its solution: \lean{feedbackCost_eq}, \lean{feedbackCost_div_le} (\lean{FTPaper/Feedback.lean}). The composed procedure as one explicit plan: \lean{fbPlan}, \lean{correct_fbPlan}, \lean{calls_fbPlan_le}, \lean{syndrome_fits} (\lean{FTPaper/QFeedback.lean}).}
+
+\begin{proof}
+Collect the round-1 check rows of $n$ batches. They fill $n/G$ batches, which we process recursively at depth $g-1$, and round~2 is treated the same way. Direct conversions cost $A$ calls per row. So the cost $c_g$ per batch satisfies $c_g=w+(2/G)c_{g-1}$ and $c_0=w+4sA=w+(2/G)WA$. Hence $c_g=w\sum_{i\le g}(2/G)^i+(2/G)^{g+1}WA$. Dividing by $W$ and using $2/G=4\delta$ gives the bound.
+\end{proof}
+
+In the plan \lean{fbPlan}, level $j$ runs on $20^j$ copies, and its $2s$ check rows fit exactly into level $j-1$. Level~$0$ is OpenAI's direct conversion bank.
+
+% ---------------------------------------------------------------------------
+\section{Proof of Theorem~\ref{thm:onelevel}}\label{sec:proof13}
+
+The rows of the batch are triples (label, copy, shift), with $2^{bL}$ labels, $20^d$ copies and $2^m$ shifts, so $W=2^{m+bL}20^d$. The proof has five steps.
+\begin{enumerate}
+\item \emph{Window.} Take $t=\lceil\sqrt{m\ln80/2}\rceil$ and $[u,v]=[\lceil m/2-t\rceil,\lfloor m/2+t\rfloor]$.
+\item \emph{Size of $J$.} By the exponential-moment method (Hoeffding~\cite{Hoe63}), at most a $2e^{-2t^2/m}\le1/40$ fraction of the shifts lies outside the window. By Lemma~\ref{lem:predictor}(4) this holds at every frequency. So $s=W/40$, $\delta=1/40$ and $G=20$.
+\item \emph{Degree.} $e=v-u\le2t\le3\sqrt m+2$, using $\ln 80\le 9/2$.
+\item \emph{Cost per batch.} By Lemmas~\ref{lem:predictor} and~\ref{lem:repair}, $w=2e\rho W$: two applications of the predictor, each of $e$ stages costing at most $\rho$ calls per row.
+\item \emph{Feedback.} Apply Lemma~\ref{lem:feedback} with $4\delta=1/10$ and $g+1=d$, so that $(4\delta)^{g+1}A\le1$. This gives
+\[
+  \frac{\sigma}{W}\le\frac{10}{9}\cdot2(3\sqrt m+2)\rho+1=\Bigl(\frac{20}{3}\sqrt m+\frac{40}{9}\Bigr)\rho+1 .
+\]
+\end{enumerate}
+For the routed form, combine this with Corollary~\ref{cor:R2}.
+\formal{\lean{theorem1} (\lean{FTPaper/QFeedback.lean}). The steps are \lean{card_tail_le}, \lean{window_fraction}, \lean{log_eighty_le} (\lean{FTPaper/Window.lean}); \lean{outside_window}, \lean{window_width}, \lean{frequency_batchVia}, \lean{correct_fbPlan}, \lean{fbPlan_calls_bound_one}. The tail bound is proved directly; Hoeffding's inequality is not imported.}
+
+
+% ---------------------------------------------------------------------------
+\section{The cost of one pencil stage}\label{sec:routing}
+
+\begin{lemma}[One stage]\label{lem:R1}
+Take OpenAI's binary routing system with label length $L$, alphabet $\{0,1\}^b$ with $b\ge1$ and dimension $D$, where $m\le 2^{b\lfloor L/2\rfloor}$. For arbitrary dyadic stage coefficients, OpenAI's compiled pencil on $2^{bL}R$ rows makes at most $6D(1+b)^L\cdot 2^{bL}R$ calls. That is $\rho\le6D(1+b)^L$. Moreover $D\le2+L2^b$.
+\end{lemma}
+\formal{\lean{lemmaR1_pencil}, \lean{routing_arith} (\lean{FTPaper/RoutingOAI.lean}), and \lean{lemmaR1_pencilF} for the pencil of Section~\ref{sec:local}; the bound on $D$ is OpenAI's \lean{dimension_le}.}
+
+\begin{proof}[Proof idea]
+OpenAI's Lean call bound for the pencil is $2DR\bigl(2\cdot2^{bL}(1+b)^L+m\,2^L2^{bL/2}\bigr)$. The two terms come from the two kinds of rectangles~\cite[\S5.2--5.4]{oai2026}:
+\begin{itemize}
+\item \emph{Free rectangles.} Each label is a source in at most $(1+b)^L$ free rectangles and a destination in at most as many. Each such incidence costs at most $2D$ calls per row.
+\item \emph{Charged rectangles.} There are at most $2^L2^{bL/2}$ of them, and each costs at most $2DR$ calls per query.
+\end{itemize}
+Since $m\le2^{bL/2}$ and $1+b\ge2$, the second term is at most $2^{bL}(1+b)^L$.
+\end{proof}
+
+\begin{corollary}[Routing parameters]\label{cor:R2}
+For an integer $x\ge2$ put $L=2\lceil\sqrt{x/\log_2x}\,\rceil$, $b=\lceil2x/L\rceil$ and $D=2+L2^b$. Then $bL/2\ge x$ and $\log_2\bigl(6D(1+b)^L\bigr)\le11\sqrt{x\log_2x}+7$.
+\end{corollary}
+\formal{\lean{routing_alphabet}, \lean{routing_exponent_le} (\lean{FTPaper/Routing.lean}).}
+
+\subsection{Rational coefficients}\label{sec:rational}
+
+OpenAI's plan language has only dyadic coefficients, while our predictor's coefficients have denominators like $h!$. We therefore prove Theorem~\ref{thm:onelevel} in \lean{QPlan}, which runs OpenAI's plans unchanged through \lean{embed}. Some change of this kind is necessary, because the predictor interpolates $(-1)^c$ on a window of consecutive counts:
+
+\begin{proposition}[No dyadic predictor]\label{prop:dyadic}
+No polynomial with coefficients in $\Z[1/2]$ equals $(-1)^c$ at four consecutive integers $c$.
+\end{proposition}
+\formal{\lean{six_dvd_third_diff}, \lean{third_diff_sum}, \lean{no_dyadic_window} (\lean{FTPaper/Dyadic.lean}).}
+
+\begin{proof}
+Clear a common power $2^e$ from the coefficients. For all integers $u$ and $n\ge0$, the third difference $(u+3)^n-3(u+2)^n+3(u+1)^n-u^n$ is divisible by $2$ and by $3$, hence by $6$. So $2^e$ times the third difference of $P$ at an integer is divisible by $6$. The third difference of $(-1)^c$ is $-8(-1)^c$, and $6\nmid 2^{e+3}$.
+\end{proof}
+
+% ---------------------------------------------------------------------------
+\section{From plans to circuits, and the explicit rate}\label{sec:circuits}
+
+\subsection{Compiling plans}
+
+OpenAI's plan axes carry $2h$ bits, but the batch inequality~\eqref{eq:batch} is needed for every width $f\ge1$. We therefore split each axis into two half-axes of $h$ bits. A child call is $2^{-h}$ times two half-axis calls, and the scalar is free in this circuit model, because it can be absorbed into the coefficients of the gates that use the value.
+
+Let $\free(p)$ count the gates outside calls per address. A row mix with $i$ inputs and $o$ outputs costs $oi$, except that a $1\times1$ mix (a scaling) is free. Address permutations and scalings are free.
+
+\begin{lemma}[Compilation]\label{lem:compile}
+Let $p$ be a correct rational plan on $W$ rows over $A$ axes with $\sigma$ calls, and put $\Omega=\free(p)$. Then for every field $K$ of characteristic $0$, the batch inequality~\eqref{eq:batch} holds with $2A$ axes, $W$ rows, $2\sigma$ calls and local cost $\Omega$.
+\end{lemma}
+\formal{\lean{kernelBatch_of_correct}, via \lean{child_eq}, \lean{program_qplan}, \lean{target_eq} (\lean{FTPaper/QCircuit.lean}). The plan is compiled into OpenAI's circuit-level program model \lean{PrimeTemplateProgram}.}
+
+\begin{corollary}\label{cor:plan}
+If moreover $2\sigma/W<(2A)^\theta$ for some $\theta\ge0$, then there is $D$ with $\cost_K(H^{\otimes k})\le D\,2^k(1+k)^\theta$ for every field $K$ of characteristic~$0$ and every $k$.
+\end{corollary}
+\formal{\lean{walsh_bound_of_plan} (\lean{FTPaper/QCircuit.lean}).}
+
+\begin{proof}[Proof of Corollary~\ref{cor:every}]
+Given $\varepsilon>0$, choose $x\ge2$ with $11\sqrt{x\log_2x}+11\le\varepsilon(x+1)$, and take $m=2^x-1$. Since $A\ge2m$, this choice of $x$ makes Theorem~\ref{thm:onelevel} with Corollary~\ref{cor:R2} give $2\sigma/W<(2A)^{1/2+\varepsilon}$. Then apply Corollary~\ref{cor:plan}. (Lean: \lean{exists_routing_x}, \lean{saving_of_routing}, \lean{walsh_upper}.)
+\end{proof}
+
+\subsection{Local cost}\label{sec:local}
+
+Corollary~\ref{cor:plan} hides its constant. Making it explicit requires an explicit bound on $\Omega$. OpenAI's Lean development builds the single-row endpoint plans of the routing with \lean{Classical.choose}, from existence statements of the form ``some plan with at most $n$ calls implements $M$''. A chosen witness may contain any amount of work outside calls, so no theorem bounds the local cost of their pencil. We rederive that existence chain with a stronger predicate \lean{RealizesF}, which also requires the witness to satisfy $\free(p)=0$. OpenAI's own witnesses qualify: identities, address permutations, full conversions, sign passes, and their compositions. Our copies therefore differ from the originals only in carrying this extra fact (\lean{FTPaper/Free/}). The resulting pencil \lean{geometricPencilF} has OpenAI's block semantics and call bound (\lean{block_geometricPencilF}, \lean{calls_geometricPencilF}).
+
+\begin{lemma}[Local cost]\label{lem:local}
+\leavevmode
+\begin{enumerate}
+\item The pencil \lean{geometricPencilF} on $n$ rows spends at most $20(|\mathcal F|+|\mathcal C|+1)(m+2)\,n^3$ gates per address outside calls. It has $|\mathcal F|\le((b+1)2^b)^L$ free and $|\mathcal C|\le2^L2^{b\lfloor L/2\rfloor}$ charged rectangles.
+\item The plan of Theorem~\ref{thm:onelevel} on $W$ rows spends at most $(2\kappa'+3)W^3$ gates per address outside calls. Here $\kappa'=2e\kappa+30e+64$, with $\kappa=20(|\mathcal F|+|\mathcal C|+1)(m+2)$ and $e=v-u$.
+\end{enumerate}
+\end{lemma}
+\formal{(1) \lean{planFree_geometricPencilF}, \lean{card_free_le}, \lean{card_paid_le} (\lean{FTPaper/LocalCostOAI.lean}); (2) \lean{qfree_fbPlan_le} with \lean{fbConst}, \lean{pencilCoef} (\lean{FTPaper/LocalCostQ.lean}).}
+
+These bounds are $2^{O(m)}$, which is enough for an explicit constant.
+
+\subsection{Proof of Theorem~\ref{thm:rate}}
+
+Fix an integer $x\ge12$ and choose the parameters:
+\begin{itemize}
+\item $m=2^x-1$ queries;
+\item $L$, $b$ and $D$ from Corollary~\ref{cor:R2}, with OpenAI's routing system for $L,b$;
+\item feedback depth $d=x+1$;
+\item $W=2^{m+bL}20^d$ rows and $A=2(m+D-1)$ axes;
+\item padding $r=\lfloor\log_2W\rfloor+1+2A$ and exponent $\theta=\frac12+2\varepsilon(x)$.
+\end{itemize}
+Let $p$ be the plan of Theorem~\ref{thm:onelevel}, with $\sigma$ calls and local cost $\Omega$. The proof has four steps.
+\begin{enumerate}
+\item \emph{Calls.} By Theorem~\ref{thm:onelevel} and Corollary~\ref{cor:R2}, $\sigma/W\le B(x)$, where
+\[
+  B(x):=\Bigl(\frac{20}{3}\sqrt{2^x-1}+\frac{40}{9}\Bigr)2^{11\sqrt{x\log_2x}+7}+1 .
+\]
+\item \emph{Saving with margin.} The definition of $\varepsilon(x)$ gives $2B(x)\le(2A)^{1/2+\varepsilon(x)}$, and $(2A)^{\varepsilon(x)}\ge4$ absorbs the padding factor and a margin of~$1$:
+\[
+  \frac{2\sigma}{W}\Bigl(1+\frac{W}{2^r}\Bigr)+1\ \le\ (2A)^{\theta}.
+\]
+\item \emph{Constant.} Apply Lemma~\ref{lem:recursion} to the batch inequality of Lemma~\ref{lem:compile}. Since the margin is at least~$1$, $\Drec\le2\Omega+2^{r+2A}+1$. By Lemma~\ref{lem:local} and the bounds $W\le2^{2(x+1)^2+5(x+1)+2^x}$ and $A\le(8x+12)2^x$, this is at most $2^{2^{3x}}$ for $x\ge12$.
+\item \emph{Conclusion.} So $\cost_K(H^{\otimes k})\le2^{2^{3x}}\,2^k(1+k)^{1/2+2\varepsilon(x)}$. If $\log_2(1+k)\ge2^{4x}$, then $2^{2^{3x}}\le(1+k)^{2^{-x}}\le(1+k)^{\varepsilon(x)}$, which proves~(a).
+\end{enumerate}
+For~(b), take $x=\lfloor\ell/4\rfloor\ge12$. Then $2^{4x}\le2^\ell\le\lfloor\log_2(1+k)\rfloor$, and $3\varepsilon(x)\le66\sqrt{\log_2x/x}\le200\sqrt{\log_2\ell/\ell}$.
+\formal{(1) \lean{xcalls}; (2) \lean{saving_of_routing}, \lean{xsaving}; (3) \lean{walsh_bound_explicit}, \lean{paddedX_le}, \lean{xW_le}, \lean{xA_le}, \lean{xT_le}; (4) \lean{walsh_explicit_rate}; (b) \lean{xOf_spec}, \xeps\texttt{\_le}, \lean{walsh_explicit_rate_k}, \lean{walsh_rate_asymptotic} (\lean{FTPaper/ExplicitRate.lean}).}
+
+% ---------------------------------------------------------------------------
+\section{Limits of the method}\label{sec:limits}
+
+\begin{proof}[Proof of Theorem~\ref{thm:limits}]
+(1) Suppose $2\sigma/W<\sqrt{2A}$, and choose $\theta\in[0,\frac12)$ with $2\sigma/W<(2A)^\theta$. Corollary~\ref{cor:plan} gives $\cost_K(H^{\otimes k})\le D\,2^k(1+k)^\theta$. For large $k$ this contradicts $c\,2^k\sqrt k\le\cost_K(H^{\otimes k})$, since $(1+k)^\theta/\sqrt k\to0$.
+
+(2) For ($\Leftarrow$), write $H^{\otimes k}=(H^{\otimes a}\otimes I_{2^r})(I_{2^a}\otimes H^{\otimes r})$ with $a=\lceil k/(1+\gamma)\rceil$ and $r=k-a\le\gamma a$. The first factor consists of $2^r$ copies of $H^{\otimes a}$, which we batch in groups of $W\le2^{\gamma a}$. This gives $T(k)\le C'\sqrt a+T(r)$ with $r\le\frac{\gamma}{1+\gamma}k$, and the resulting geometric series gives $T(k)=O(\sqrt k)$. For ($\Rightarrow$), take $W=1$.
+
+(3) By the pigeonhole principle, some $S\subseteq V$ with $|S|\ge|V|/2^D$ shares one vector $d=d_\lambda$ ($\lambda\in S$). Since $\langle d,d\rangle\ne0$, no rectangle of $\mathcal F$ meets $S\times S$. Restricted to $S\times S$, the rectangles of $\mathcal C$ therefore sum to the identity $I_S$. That matrix has rank $|S|$, while each rectangle has rank at most~$1$.
+\end{proof}
+\formal{(1) \lean{exists_large_sqrt}, \lean{template_floor}; (2) \lean{split_step}, \lean{batching_sufficient}, \lean{batching_necessary}; (3) \lean{charged_card_ge}, \lean{charged_card_ge_pow}, \lean{charged_card_ge_pairing}.}
+
+
+% ---------------------------------------------------------------------------
+\section{The Lean development}\label{sec:lean}
+
+\paragraph{Pins.} Lean v4.34.1 and Mathlib commit \lean{d13f23b7}, the same as OpenAI's repository.
+
+\paragraph{Vendored code.} We include 156 modules of \lean{openai/math} unchanged (byte-identical to commit \lean{3344da5}, Apache License~2.0). They are the import closure of OpenAI's binary template, plus their circuit-level template pass. Our own code is about $6{,}400$ lines in 37 files.
+
+\paragraph{Adapted copies.} Two groups of OpenAI's proofs are copied with changes; each file states its source and its changes:
+\begin{itemize}
+\item \lean{FTPaper/Free/} rederives OpenAI's endpoint realizations with \lean{RealizesF};
+\item \lean{FTPaper/ExplicitRecursion.lean} makes OpenAI's private padded recursion and its constant public.
+\end{itemize}
+
+\paragraph{Axioms.} The file \lean{CheckAxioms.lean} prints the axioms of 102 named results. Each depends only on \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}; there is no \lean{sorryAx}.
+
+\paragraph{Building.} Run \lean{lake exe cache get}, then \lean{lake build}, then \lean{lake env lean CheckAxioms.lean}. A full build is about 9{,}100 jobs.
+
+\begin{table}[h]
+\caption{Where the results are formalized (all files in \lean{FTPaper/}).}
+\label{tab:files}
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.34\linewidth}>{\raggedright\arraybackslash}p{0.62\linewidth}@{}}
+\toprule
+Result & Files and main Lean names\\
+\midrule
+Lemma~\ref{lem:predictor} (predictor) & \lean{Predictor}, \lean{QHorner}: \lean{predictor_correct}, \lean{horner_eq}, \lean{card_window_complement}\\
+Lemma~\ref{lem:repair} (repair) & \lean{Repair}, \lean{QTwoPass}: \lean{repair_correct}, \lean{exists_table_vandermonde}\\
+Lemma~\ref{lem:feedback} (feedback) & \lean{Feedback}, \lean{QFeedback}: \lean{feedbackCost_div_le}, \lean{fbPlan}, \lean{correct_fbPlan}\\
+Theorem~\ref{thm:onelevel} (one level) & \lean{Window}, \lean{QTheorem1}, \lean{QMain}, \lean{QFeedback}, \lean{QRouted}: \lean{theorem1}, \lean{theorem1_explicit}, \lean{theorem1_routed}\\
+Proposition~\ref{prop:oaistages} (OpenAI's stages) & \lean{Compare}: \lean{oai_stages_ge}, \lean{oai_stages_ge_real}\\
+Lemma~\ref{lem:R1}, Corollary~\ref{cor:R2} (routing) & \lean{RoutingOAI}, \lean{Routing}: \lean{lemmaR1_pencil}, \lean{routing_exponent_le}\\
+Proposition~\ref{prop:dyadic} (no dyadic predictor) & \lean{Dyadic}: \lean{no_dyadic_window}\\
+Lemma~\ref{lem:compile}, Corollaries~\ref{cor:plan}, \ref{cor:every} & \lean{QCircuit}, \lean{QUpper}: \lean{kernelBatch_of_correct}, \lean{walsh_bound_of_plan}, \lean{walsh_upper}\\
+Lemma~\ref{lem:local} (local cost) & \lean{PlanFree}, \lean{Free/*}, \lean{LocalCostOAI}, \lean{LocalCostQ}: \lean{planFree_geometricPencilF}, \lean{qfree_fbPlan_le}\\
+Lemma~\ref{lem:recursion}, Theorem~\ref{thm:rate} (rate) & \lean{ExplicitRecursion}, \lean{ExplicitRate}: \lean{walsh_explicit_rate}, \lean{walsh_rate_asymptotic}\\
+Theorem~\ref{thm:limits} (limits) & \lean{Floor}, \lean{Batching}, \lean{Limits}: \lean{template_floor}, \lean{batching_sufficient}, \lean{charged_card_ge_pairing}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section*{Use of AI tools}
+
+This work was carried out with extensive use of Claude, a large language model developed by Anthropic, through the Claude Code tool. Under the author's direction, the model proposed constructions and proof strategies, wrote the Lean formalization, and drafted the text. The author is responsible for the content. Every theorem, proposition, lemma and corollary in this paper is machine-checked in Lean, as described in Section~\ref{sec:lean}. The manuscript we build on~\cite{oai2026} was itself produced by an AI model, as stated by its authors~\cite{oaimath}.
+
+\begin{acks}
+The author thanks OpenAI for releasing their manuscript together with its Lean formalization under the Apache License~2.0, without which this work would not have been possible.
+\end{acks}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+% ---------------------------------------------------------------------------
+\appendix
+\section{Lean statements of the main results}\label{app:statements}
+
+We quote the definitions on which the main statements depend, and the statements themselves, with Unicode symbols typeset as mathematics. The first two definitions are OpenAI's (\lean{OAI/LinearAlgebra/FiniteFourier/}).
+
+\begin{Verbatim}[commandchars=\\\{\},fontsize=\small]
+-- PrimeDigits.lean: the k-digit tensor power of the unnormalized Fourier matrix
+def primeTransform \{K : Type*\} [CommSemiring K] (\(\ell\) k : \(\mathbb{N}\)) (\(\zeta\) : K) :
+    Matrix (Fin k \(\to\) Fin \(\ell\)) (Fin k \(\to\) Fin \(\ell\)) K :=
+  fun i j => \(\prod\) d, \(\zeta\) ^ ((i d).val * (j d).val)
+
+-- Circuit.lean: least number of binary linear gates needed to apply a matrix
+noncomputable def complexity [Fintype I] [Fintype O] (M : Matrix O I K) : \(\mathbb{N}\) :=
+  sInf \{n | RealizableAtMost M n\}
+\end{Verbatim}
+Here \lean{RealizableAtMost M n} says that some circuit with at most $n$ binary gates computes $M$. Each gate is \lean{leftCoeff * v left + rightCoeff * v right} over two available wires, and each readout is either zero or a scaled wire. In particular, $H^{\otimes k}$ is \lean{primeTransform 2 k (-1)}.
+
+\begin{Verbatim}[commandchars=\\\{\},fontsize=\small]
+-- ExplicitRate.lean
+noncomputable def x\(\varepsilon\) (x : \(\mathbb{N}\)) : \(\mathbb{R}\) :=
+  (11 * Real.sqrt (x * Real.logb 2 x) + 11) / (x + 1)
+
+theorem walsh_explicit_rate (x : \(\mathbb{N}\)) (hx : 12 \(\le\) x) (k : \(\mathbb{N}\))
+    (hk : (2 : \(\mathbb{R}\)) ^ (2 ^ (4 * x)) \(\le\) 1 + k)
+    (F : Type) [Field F] [CharZero F] :
+    (complexity (primeTransform 2 k (-1 : F)) : \(\mathbb{R}\))
+      \(\le\) 2 ^ k * (1 + (k : \(\mathbb{R}\))) ^ ((1 : \(\mathbb{R}\)) / 2 + 3 * x\(\varepsilon\) x)
+
+theorem walsh_rate_asymptotic (k : \(\mathbb{N}\))
+    (hk : 48 \(\le\) Nat.log 2 (Nat.log 2 (1 + k)))
+    (F : Type) [Field F] [CharZero F] :
+    (complexity (primeTransform 2 k (-1 : F)) : \(\mathbb{R}\))
+      \(\le\) 2 ^ k * (1 + (k : \(\mathbb{R}\))) ^ ((1 : \(\mathbb{R}\)) / 2 + 200 * Real.sqrt
+          (Real.logb 2 (Nat.log 2 (Nat.log 2 (1 + k)) : \(\mathbb{R}\))
+            / (Nat.log 2 (Nat.log 2 (1 + k)) : \(\mathbb{R}\))))
+
+-- QUpper.lean
+theorem walsh_upper \{\(\varepsilon\) : \(\mathbb{R}\)\} (h\(\varepsilon\) : 0 < \(\varepsilon\)) :
+    \(\exists\) D > (0 : \(\mathbb{R}\)), \(\forall\) (F : Type) [Field F] [CharZero F] (k : \(\mathbb{N}\)),
+      (complexity (primeTransform 2 k (-1 : F)) : \(\mathbb{R}\))
+        \(\le\) D * 2 ^ k * (1 + (k : \(\mathbb{R}\))) ^ ((1 : \(\mathbb{R}\)) / 2 + \(\varepsilon\))
+
+-- Floor.lean
+theorem template_floor (F : Type) [Field F] [CharZero F]
+    (hlow : \(\exists\) c > (0 : \(\mathbb{R}\)), \(\forall\) k : \(\mathbb{N}\), 1 \(\le\) k \(\to\)
+      c * 2 ^ k * Real.sqrt k \(\le\) complexity (primeTransform 2 k (-1 : F)))
+    \{A W : \(\mathbb{N}\)\} (p : QPlan A W W) (hp : QPlan.Correct p) (hA : 0 < A) (hW : 0 < W) :
+    ((2 * A : \(\mathbb{N}\)) : \(\mathbb{R}\)) ^ ((1 : \(\mathbb{R}\)) / 2) \(\le\) ((2 * p.calls : \(\mathbb{N}\)) : \(\mathbb{R}\)) / W
+\end{Verbatim}
+
+In the Lean statements of Theorem~\ref{thm:onelevel} (\lean{theorem1} and its variants), the number of queries is written $m+1$, and the rows are \lean{rows L b m (20 ^ d)}. That is $2^{bL}\cdot20^d\cdot2^{m+1}$ in the notation of the Lean file, or $2^{m+bL}20^d$ for $m$ queries in the notation of this paper.
+
+\end{document}
