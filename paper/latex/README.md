@@ -1,6 +1,6 @@
 # The paper (LaTeX)
 
-`main.tex` and `references.bib` build `main.pdf` (12 pages). Every theorem, proposition, lemma and corollary in it has a Lean proof, and the Lean names follow each statement.
+`main.tex` and `references.bib` build `main.pdf` (13 pages). Every theorem, proposition, lemma and corollary in it has a Lean proof, and the Lean names follow each statement.
 
 ## Template
 
