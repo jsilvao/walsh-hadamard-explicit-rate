@@ -8,7 +8,7 @@ authors:
     affiliation: "Epistemic One"
     orcid: "https://orcid.org/0000-0001-7076-0863"
 license: Apache-2.0
-version: "1.0.1"
+version: "2.0.0"
 date-released: "2026-11-27"
 doi: "10.5281/zenodo.24575295"
 identifiers:
@@ -22,13 +22,16 @@ repository-code: "https://github.com/jsilvao/walsh-hadamard-explicit-rate"
 abstract: >-
   Paper and Lean 4 development. Over every field of characteristic zero,
   the Walsh–Hadamard transform on N = 2^k points has binary linear circuits
-  with C(H^{⊗k}) ≤ 2^k (1+k)^{1/2 + 200·√(log₂ℓ/ℓ)} gates whenever
-  ℓ = ⌊log₂⌊log₂(1+k)⌋⌋ ≥ 48, that is,
-  N (log N)^{1/2 + O(√(log⁽⁴⁾N / log⁽³⁾N))}. This makes explicit the o(1)
-  in OpenAI's N (log N)^{1/2+o(1)} for this transform. The paper also
-  sharpens one level of OpenAI's template and proves limits of the method.
-  Every theorem, proposition, lemma and corollary is machine-checked in
-  Lean 4 (104 results, standard axioms only).
+  with C(H^{⊗k}) ≤ 2^k · √(k+1) · 2^{Φ(n)} gates for every k, where
+  n = ⌊log₂(k+1)⌋ and Φ(n) = 400·√((n+2)·log₂(n+2)), that is,
+  N (log N)^{1/2 + O(√(log log log N / log log N))}. This makes explicit the
+  o(1) in OpenAI's N (log N)^{1/2+o(1)} for this transform. The proof
+  sharpens one level of OpenAI's template, makes the work outside recursive
+  calls polynomial in the number of queries (character checks on the two
+  Hamming tails with a polynomial decoder, and a row-diagonal routing
+  pencil), and lets the template grow with N. The paper also proves limits
+  of the method. Every theorem, proposition, lemma and corollary is
+  machine-checked in Lean 4 (143 results, standard axioms only).
 keywords:
   - Walsh–Hadamard transform
   - linear circuits

@@ -20,7 +20,7 @@ lake env lean CheckAxioms.lean        # prints the axioms each theorem depends o
 
 ## What is proved
 
-All 104 theorems build with no warnings. `CheckAxioms.lean` shows only the standard axioms for each.
+All 143 named results build with no warnings. `CheckAxioms.lean` shows only the standard axioms for each.
 
 ### Lemma B: two-application repair (`FTPaper/Repair.lean`, any field)
 
@@ -150,3 +150,25 @@ An explicit rate needs an explicit bound on the gates outside calls. In OpenAI's
 | **`walsh_rate_asymptotic`** | with `ℓ = ⌊log₂ ⌊log₂(1+k)⌋⌋ ≥ 48`: `C(H^{⊗k}) ≤ 2^k (1+k)^{1/2 + 200√(log₂ ℓ / ℓ)}` |
 | `xε_le_of_large`, `rate_exponent_lt_one` (`Threshold.lean`) | for every `x ≥ 2^17`, `ε(x) ≤ 0.1256`, so the exponent `1/2 + 3ε(x)` is below 1 |
 | **`template_floor`** (`Floor.lean`) | if `C(H^{⊗k}) ≥ c·2^k·√k` (OpenAI's lower bound, as a hypothesis), every correct plan has `2σ/W ≥ √(2A)` |
+
+### The sharper rate (`FTPaper/LemmaS/`, `FTPaper/Claim2/`)
+
+Paper: Theorem 1.1 (sharper rate), Theorem 1.6 (polynomial local cost), Sections 9–11. The template grows with `k`, which needs the work outside calls to be polynomial in the number of queries.
+
+| Theorem | Statement |
+|---|---|
+| `LemmaS.kraw_twoTail_injective` | the principal submatrix of the Krawtchouk matrix on the two tails is invertible (odd `n`, `2ℓ ≤ n+1`) |
+| `LemmaS.exists_strings`, `LemmaS.strings_unique` | every function on a layer of the Boolean lattice is a sum of strings `R^{k−i} h_i` of harmonics, uniquely for `i + k ≤ m` |
+| `LemmaS.hada_R_pow_apply`, `LemmaS.hcoef_eq_kraw` | the Walsh–Hadamard matrix acts on strings through Krawtchouk coefficients |
+| **`LemmaS.hada_tails_injective`** | character checks on the two tails `{|S| < u} ∪ {|S| > m−u}` are injective on functions supported there (odd `m`, `2u ≤ m+1`) |
+| **`LemmaS.decoder_poly`** | the inverse of the check operator `P_E H P_E` on the tails is a polynomial in it of degree `< (m+1)²` |
+| `LemmaS.bflys_finRange` | one butterfly per coordinate computes the transform |
+| `LemmaS.block_table` | the structured table `D_κ q(M) Λ q(M) D_κ` recovers the input on every wrongly predicted row of a block |
+| `Circ.realizable_sparse`, `Circ.kernelBatch_of_correct_sparse` | circuits charged by nonzero pattern: a row with `t` nonzeros costs `t − 1` gates; OpenAI's batch inequality with this count |
+| `Claim2.isTable_struct`, `Claim2.correct_fbPlan2`, `Claim2.calls_fbPlan2_le` | the template with structured checks is correct and makes the same calls |
+| `Claim2.block_pencilS`, `Claim2.calls_pencilS`, `Claim2.planSparse_pencilS` | OpenAI's pencil rebuilt with row-diagonal entries: same blocks, same calls, local cost `R·poly` |
+| **`Claim2.xplan2_correct`, `Claim2.xplan2_calls`, `Claim2.xplan2_cost`** | at routing parameter `x ≥ 4`: correct, same calls as `xplan x`, at most `(10/9)·2^{14x+12}` gates per row and address outside calls |
+| `Claim2.step_le`, `Claim2.xstep` | one step of the recursion: `t(Af+h) ≤ 2C/W + (2σ/W) t(f) + t(h)`, with `t(h) ≤ 2(h+1)` |
+| `Claim2.Φ_step` | `γ(x) + Φ(n−x−1) + 1 ≤ Φ(n)` for `n ≥ 256`, `x = ⌊n/40⌋` |
+| **`Claim2.walsh_claim2`** | for every `k`: `C(H^{⊗k}) ≤ 2^k √(k+1) 2^{Φ(⌊log₂(k+1)⌋)}`, `Φ(n) = 400√((n+2) log₂(n+2))` |
+| `Claim2.walsh_claim2_below_trivial` | this is below `k·2^k` once `⌊log₂(k+1)⌋ ≥ 2^32` |

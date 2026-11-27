@@ -17,5 +17,8 @@ Some of OpenAI's proofs are copied, with changes, into our own files (Apache 2.0
 
 - `FTPaper/Free/Basic.lean`, `Endpoints.lean`, `Bridge.lean`, `FreeGeometry.lean`, `Charged.lean` and `Pencil.lean` come from `KernelPassFactors`, `KernelPassMonomial`, `KernelPassPartial`, `KernelPassEndpointPair`, `KernelPassEndpoints`, `KernelPassBridge`, `KernelPassFreeGeometry`, `KernelPassCharged`, `KernelPassChargedLabels` and `KernelPassGeometry`. The change: `Realizes` becomes `RealizesF`, which also asks the witness to spend no gates outside calls. Private helpers are copied with an `F` suffix.
 - `FTPaper/ExplicitRecursion.lean` comes from `LinearAlgebra/FiniteFourier/PrimeKernel.lean`. The change: the private padded recursion and its constant are public, with an `X` suffix.
+- `FTPaper/Claim2/SparsePencil.lean` adapts `entries`, `free`, `charged` (with its private `fanout` and `collect`) and `pencil` from `KernelPassRectBank`, `KernelPassRectFree`, `KernelPassRectCharged` and `KernelPassRectPencil`. The change: the entries are restricted to row-diagonal pairs.
+- `FTPaper/Claim2/Sparse.lean` adapts the private row-by-row circuit construction of `LinearAlgebra/FiniteFourier/Circuit.lean`. The change: a row supported on `s` costs `|s| − 1` gates.
+- `step_le` in `FTPaper/Claim2/RateStep.lean` follows the private `primeTransform_bound_padded` of `PrimeKernel.lean`, keeping the local cost divided by `W`.
 
 Each file states its source and changes in its header.

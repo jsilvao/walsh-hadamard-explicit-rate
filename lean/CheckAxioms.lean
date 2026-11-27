@@ -126,3 +126,48 @@ standard axioms `propext`, `Classical.choice`, `Quot.sound` (no `sorryAx`). -/
 -- Where the explicit rate beats the trivial exponent (paper: after Theorem 1.1), FTPaper/Threshold.lean
 #print axioms FTPaper.xε_le_of_large
 #print axioms FTPaper.rate_exponent_lt_one
+-- Theorem 1.1 (the sharper rate), FTPaper/Claim2/Rate.lean
+#print axioms FTPaper.Claim2.walsh_claim2
+#print axioms FTPaper.Claim2.walsh_claim2_below_trivial
+#print axioms FTPaper.Claim2.tcost_le
+#print axioms FTPaper.Claim2.Φ_step
+#print axioms FTPaper.Claim2.Φ_le_half
+#print axioms FTPaper.Claim2.Bx_le
+-- One step of the growing recursion, FTPaper/Claim2/RateStep.lean
+#print axioms FTPaper.Claim2.step_le
+#print axioms FTPaper.Claim2.tcost_classical
+#print axioms FTPaper.Claim2.xstep
+-- The structured template at parameter x, FTPaper/Claim2/Level.lean
+#print axioms FTPaper.Claim2.window_symm
+#print axioms FTPaper.Claim2.calls_fbPlanS_eq
+#print axioms FTPaper.Claim2.xplan2_correct
+#print axioms FTPaper.Claim2.xplan2_calls
+#print axioms FTPaper.Claim2.xplan2_cost
+-- Lemma S: checks on the two tails, FTPaper/LemmaS/
+#print axioms FTPaper.LemmaS.kraw_twoTail_injective
+#print axioms FTPaper.LemmaS.exists_strings
+#print axioms FTPaper.LemmaS.strings_unique
+#print axioms FTPaper.LemmaS.hada_R_pow_apply
+#print axioms FTPaper.LemmaS.hcoef_eq_kraw
+#print axioms FTPaper.LemmaS.hada_tails_injective
+#print axioms FTPaper.LemmaS.decoder_poly
+#print axioms FTPaper.LemmaS.bflys_finRange
+#print axioms FTPaper.LemmaS.block_table
+-- Sparse local cost, FTPaper/Claim2/Sparse.lean, PencilCost.lean, Cost.lean
+#print axioms FTPaper.Circ.realizable_sparse
+#print axioms FTPaper.Circ.program_qplan_sparse
+#print axioms FTPaper.Circ.kernelBatch_of_correct_sparse
+#print axioms FTPaper.Claim2.planSparse_le_planFree
+#print axioms FTPaper.Claim2.planSparse_pencilS
+#print axioms FTPaper.Claim2.qsparse_fbPlanS_le
+-- The structured repair and the row-diagonal pencil, FTPaper/Claim2/
+#print axioms FTPaper.Claim2.Blocks.gather_applyAt
+#print axioms FTPaper.Claim2.Blocks.scatter_applyAt
+#print axioms FTPaper.Claim2.Blocks.isTable_struct
+#print axioms FTPaper.Claim2.frequency_batch2
+#print axioms FTPaper.Claim2.correct_fbPlan2
+#print axioms FTPaper.Claim2.calls_fbPlan2_le
+#print axioms FTPaper.Claim2.block_pencilS
+#print axioms FTPaper.Claim2.calls_pencilS
+#print axioms FTPaper.Claim2.eval_ourStageS
+#print axioms FTPaper.Claim2.qsparse_ourStageS
