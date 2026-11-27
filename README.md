@@ -18,14 +18,14 @@ This repository makes that `o(1)` explicit over fields of characteristic 0 and c
 cd lean
 lake exe cache get                  # prebuilt Mathlib
 lake build                          # about 9,100 jobs
-lake env lean CheckAxioms.lean      # axioms of the 102 named results
+lake env lean CheckAxioms.lean      # axioms of the 104 named results
 ```
 
 Every result depends only on `propext`, `Classical.choice` and `Quot.sound`. The main statements are about OpenAI's definitions `complexity` (least number of binary linear gates) and `primeTransform`. Appendix A of the paper quotes those definitions and the main statements.
 
 ## Contents
 
-- `lean/FTPaper/`: our development, about 6,400 lines.
+- `lean/FTPaper/`: our development, about 6,500 lines.
 - `lean/OAI/`: 156 modules of [openai/math](https://github.com/openai/math), unchanged. They are © OpenAI under Apache-2.0; see `lean/OAI/NOTICE.md`. The files `lean/FTPaper/Free/` and `lean/FTPaper/ExplicitRecursion.lean` are adapted copies of OpenAI code, and each file states its source and changes.
 - `paper/latex/`: the paper.
 

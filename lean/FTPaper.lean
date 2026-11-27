@@ -35,3 +35,4 @@ import FTPaper.ExplicitRate
 import FTPaper.Floor
 import FTPaper.Dyadic
 import FTPaper.Compare
+import FTPaper.Threshold

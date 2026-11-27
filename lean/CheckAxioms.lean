@@ -123,3 +123,6 @@ standard axioms `propext`, `Classical.choice`, `Quot.sound` (no `sorryAx`). -/
 #print axioms FTPaper.oai_stages_ge_real
 -- Theorem 1.5(3), pairing form, FTPaper/Limits.lean
 #print axioms FTPaper.charged_card_ge_pairing
+-- Where the explicit rate beats the trivial exponent (paper: after Theorem 1.1), FTPaper/Threshold.lean
+#print axioms FTPaper.xε_le_of_large
+#print axioms FTPaper.rate_exponent_lt_one

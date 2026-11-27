@@ -26,6 +26,7 @@
 \title{An Explicit Rate for the Logarithmic Exponent of the Walsh--Hadamard Transform}
 
 \author{Javier Silva Ortiz}
+\email{javier@epistemic.one}
 \affiliation{%
   \institution{Independent researcher}
   \country{Germany}}
@@ -83,7 +84,7 @@ In terms of $N=2^k$: $\cost_K(H^{\otimes k})\le N(\log N)^{1/2+O(\sqrt{\log^{(4)
 \end{theorem}
 \formal{\lean{walsh_explicit_rate} (a), \lean{walsh_explicit_rate_k}, \lean{walsh_rate_asymptotic} (b); file \lean{FTPaper/ExplicitRate.lean}. The statements are quoted in Appendix~\ref{app:statements}.}
 
-The bound is of theoretical interest only. It applies only when $\log_2(1+k)\ge2^{48}$, and its exponent beats the trivial exponent $1$ only once $\varepsilon(x)<1/6$. What is new is that the rate is explicit and that every step is machine-checked. The same pipeline also gives OpenAI's upper bound in~\eqref{eq:oai} for characteristic~$0$, through our template:
+The bound is of theoretical interest only. It applies only when $\log_2(1+k)\ge2^{48}$. Its exponent is below the trivial exponent $1$ for every $x\ge2^{17}$ (Lean: \lean{rate_exponent_lt_one}), so it improves on the direct algorithm once $\log_2\log_2(1+k)\ge2^{19}$. What is new is that the rate is explicit and that every step is machine-checked. The same pipeline also gives OpenAI's upper bound in~\eqref{eq:oai} for characteristic~$0$, through our template:
 
 \begin{corollary}[Every $\varepsilon$]\label{cor:every}
 For every $\varepsilon>0$ there is $D_\varepsilon$ such that $\cost_K(H^{\otimes k})\le D_\varepsilon\,2^k(1+k)^{1/2+\varepsilon}$ for every field $K$ of characteristic $0$ and every $k\ge0$.
@@ -432,7 +433,7 @@ For~(b), take $x=\lfloor\ell/4\rfloor\ge12$. Then $2^{4x}\le2^\ell\le\lfloor\log
 
 \paragraph{Pins.} Lean v4.34.1 and Mathlib commit \lean{d13f23b7}, the same as OpenAI's repository.
 
-\paragraph{Vendored code.} We include 156 modules of \lean{openai/math} unchanged (byte-identical to commit \lean{3344da5}, Apache License~2.0). They are the import closure of OpenAI's binary template, plus their circuit-level template pass. Our own code is about $6{,}400$ lines in 37 files.
+\paragraph{Vendored code.} We include 156 modules of \lean{openai/math} unchanged (byte-identical to commit \lean{3344da5}, Apache License~2.0). They are the import closure of OpenAI's binary template, plus their circuit-level template pass. Our own code is about $6{,}500$ lines in 38 files.
 
 \paragraph{Adapted copies.} Two groups of OpenAI's proofs are copied with changes; each file states its source and its changes:
 \begin{itemize}
@@ -440,7 +441,7 @@ For~(b), take $x=\lfloor\ell/4\rfloor\ge12$. Then $2^{4x}\le2^\ell\le\lfloor\log
 \item \lean{FTPaper/ExplicitRecursion.lean} makes OpenAI's private padded recursion and its constant public.
 \end{itemize}
 
-\paragraph{Axioms.} The file \lean{CheckAxioms.lean} prints the axioms of 102 named results. Each depends only on \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}; there is no \lean{sorryAx}.
+\paragraph{Axioms.} The file \lean{CheckAxioms.lean} prints the axioms of 104 named results. Each depends only on \lean{propext}, \lean{Classical.choice} and \lean{Quot.sound}; there is no \lean{sorryAx}.
 
 \paragraph{Building.} Run \lean{lake exe cache get}, then \lean{lake build}, then \lean{lake env lean CheckAxioms.lean}. A full build is about 9{,}100 jobs.
 
@@ -461,7 +462,7 @@ Lemma~\ref{lem:R1}, Corollary~\ref{cor:R2} (routing) & \lean{RoutingOAI}, \lean{
 Proposition~\ref{prop:dyadic} (no dyadic predictor) & \lean{Dyadic}: \lean{no_dyadic_window}\\
 Lemma~\ref{lem:compile}, Corollaries~\ref{cor:plan}, \ref{cor:every} & \lean{QCircuit}, \lean{QUpper}: \lean{kernelBatch_of_correct}, \lean{walsh_bound_of_plan}, \lean{walsh_upper}\\
 Lemma~\ref{lem:local} (local cost) & \lean{PlanFree}, \lean{Free/*}, \lean{LocalCostOAI}, \lean{LocalCostQ}: \lean{planFree_geometricPencilF}, \lean{qfree_fbPlan_le}\\
-Lemma~\ref{lem:recursion}, Theorem~\ref{thm:rate} (rate) & \lean{ExplicitRecursion}, \lean{ExplicitRate}: \lean{walsh_explicit_rate}, \lean{walsh_rate_asymptotic}\\
+Lemma~\ref{lem:recursion}, Theorem~\ref{thm:rate} (rate) & \lean{ExplicitRecursion}, \lean{ExplicitRate}, \lean{Threshold}: \lean{walsh_explicit_rate}, \lean{walsh_rate_asymptotic}, \lean{rate_exponent_lt_one}\\
 Theorem~\ref{thm:limits} (limits) & \lean{Floor}, \lean{Batching}, \lean{Limits}: \lean{template_floor}, \lean{batching_sufficient}, \lean{charged_card_ge_pairing}\\
 \bottomrule
 \end{tabular}

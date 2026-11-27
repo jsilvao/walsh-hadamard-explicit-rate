@@ -20,7 +20,7 @@ lake env lean CheckAxioms.lean        # prints the axioms each theorem depends o
 
 ## What is proved
 
-All 102 theorems build with no warnings. `CheckAxioms.lean` shows only the standard axioms for each.
+All 104 theorems build with no warnings. `CheckAxioms.lean` shows only the standard axioms for each.
 
 ### Lemma B: two-application repair (`FTPaper/Repair.lean`, any field)
 
@@ -148,4 +148,5 @@ An explicit rate needs an explicit bound on the gates outside calls. In OpenAI's
 | **`walsh_explicit_rate`** | for `x ≥ 12` and `log₂(1+k) ≥ 2^{4x}`: `C(H^{⊗k}) ≤ 2^k (1+k)^{1/2 + 3ε(x)}`, `ε(x) = (11√(x log₂ x) + 11)/(x+1)` |
 | **`walsh_explicit_rate_k`** | the same with `x = ⌊log₂ log₂(1+k)/4⌋`, whenever `log₂ log₂(1+k) ≥ 48` |
 | **`walsh_rate_asymptotic`** | with `ℓ = ⌊log₂ ⌊log₂(1+k)⌋⌋ ≥ 48`: `C(H^{⊗k}) ≤ 2^k (1+k)^{1/2 + 200√(log₂ ℓ / ℓ)}` |
+| `xε_le_of_large`, `rate_exponent_lt_one` (`Threshold.lean`) | for every `x ≥ 2^17`, `ε(x) ≤ 0.1256`, so the exponent `1/2 + 3ε(x)` is below 1 |
 | **`template_floor`** (`Floor.lean`) | if `C(H^{⊗k}) ≥ c·2^k·√k` (OpenAI's lower bound, as a hypothesis), every correct plan has `2σ/W ≥ √(2A)` |
