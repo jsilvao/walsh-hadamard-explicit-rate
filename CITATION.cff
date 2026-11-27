@@ -8,6 +8,7 @@ authors:
 license: Apache-2.0
 version: "1.0.1"
 date-released: "2026-11-27"
+doi: "10.5281/zenodo.24575295"
 repository-code: "https://github.com/jsilvao/walsh-hadamard-explicit-rate"
 abstract: >-
   Paper and Lean 4 development. Over every field of characteristic zero,
